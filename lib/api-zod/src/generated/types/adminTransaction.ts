@@ -5,7 +5,9 @@
  * Credit Hub KE API - airtime & data sales with M-Pesa
  * OpenAPI spec version: 0.1.0
  */
+import type { Transaction } from "./transaction";
 
-export interface HealthStatus {
-  status: string;
-}
+export type AdminTransaction = Transaction & {
+  userPhone?: string;
+  userName?: string | null;
+};

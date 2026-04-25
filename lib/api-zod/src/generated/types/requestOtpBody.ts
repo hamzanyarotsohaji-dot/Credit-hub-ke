@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface RequestOtpBody {
+  /** Kenyan phone number (any of 07xx, 01xx, +2547xx, 2547xx) */
+  phone: string;
 }

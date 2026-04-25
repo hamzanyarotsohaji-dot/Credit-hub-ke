@@ -1,42 +1,135 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/not-found";
+import { useGetMe } from "@workspace/api-client-react";
+import { useLocation, Route, Switch } from "wouter";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { AdminLayout } from "@/components/layout/AdminLayout";
+import { Login } from "@/pages/Login";
+import { Home } from "@/pages/Home";
+import { Buy } from "@/pages/Buy";
+import { TransactionStatus } from "@/pages/TransactionStatus";
+import { Wallet } from "@/pages/Wallet";
+import { Profile } from "@/pages/Profile";
+import { AdminDashboard } from "@/pages/AdminDashboard";
+import { AdminBundles } from "@/pages/AdminBundles";
+import { AdminTransactions } from "@/pages/AdminTransactions";
+import { AdminUsers } from "@/pages/AdminUsers";
 
-const queryClient = new QueryClient();
+function GuardedRoute({ component: Component, adminOnly = false }: { component: any, adminOnly?: boolean }) {
+  const [location, setLocation] = useLocation();
+  const { data: meData, isLoading } = useGetMe();
 
-function Home() {
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900">Replit Agent is building...</h1>
-        <p className="mt-2 text-sm text-gray-600">Your app will appear here once it's ready.</p>
+  useEffect(() => {
+    if (!isLoading && !meData?.user && location !== "/") {
+      setLocation("/");
+    }
+  }, [meData, isLoading, location, setLocation]);
+
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
+
+  if (!meData?.user) {
+    return null; // Will redirect in useEffect
+  }
+
+  if (adminOnly && !meData.user.isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-gray-50 px-4 text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+        <p className="text-gray-500 mb-6">You don't have permission to view this page.</p>
+        <button onClick={() => setLocation("/home")} className="bg-primary text-white px-6 py-3 rounded-lg font-medium">Return Home</button>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return <Component />;
 }
 
-function Router() {
+export default function App() {
+  const [location, setLocation] = useLocation();
+  const { data: meData, isLoading } = useGetMe();
+
+  useEffect(() => {
+    if (!isLoading && meData?.user && location === "/") {
+      setLocation("/home");
+    }
+  }, [meData, isLoading, location, setLocation]);
+
+  if (isLoading && location === "/") {
+    return <div className="flex h-[100dvh] items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
+
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route component={NotFound} />
+      <Route path="/" component={Login} />
+      
+      {/* App Routes */}
+      <Route path="/home">
+        {() => (
+          <AppLayout>
+            <GuardedRoute component={Home} />
+          </AppLayout>
+        )}
+      </Route>
+      <Route path="/buy/:bundleId">
+        {() => (
+          <AppLayout>
+            <GuardedRoute component={Buy} />
+          </AppLayout>
+        )}
+      </Route>
+      <Route path="/transactions/:id">
+        {() => (
+          <AppLayout>
+            <GuardedRoute component={TransactionStatus} />
+          </AppLayout>
+        )}
+      </Route>
+      <Route path="/wallet">
+        {() => (
+          <AppLayout>
+            <GuardedRoute component={Wallet} />
+          </AppLayout>
+        )}
+      </Route>
+      <Route path="/profile">
+        {() => (
+          <AppLayout>
+            <GuardedRoute component={Profile} />
+          </AppLayout>
+        )}
+      </Route>
+
+      {/* Admin Routes */}
+      <Route path="/admin">
+        {() => (
+          <AdminLayout>
+            <GuardedRoute component={AdminDashboard} adminOnly />
+          </AdminLayout>
+        )}
+      </Route>
+      <Route path="/admin/bundles">
+        {() => (
+          <AdminLayout>
+            <GuardedRoute component={AdminBundles} adminOnly />
+          </AdminLayout>
+        )}
+      </Route>
+      <Route path="/admin/transactions">
+        {() => (
+          <AdminLayout>
+            <GuardedRoute component={AdminTransactions} adminOnly />
+          </AdminLayout>
+        )}
+      </Route>
+      <Route path="/admin/users">
+        {() => (
+          <AdminLayout>
+            <GuardedRoute component={AdminUsers} adminOnly />
+          </AdminLayout>
+        )}
+      </Route>
     </Switch>
   );
 }
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
-  );
-}
-
-export default App;

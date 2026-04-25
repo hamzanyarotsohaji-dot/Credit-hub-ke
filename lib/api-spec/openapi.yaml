@@ -3,20 +3,24 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Credit Hub KE API - airtime & data sales with M-Pesa
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: auth
+  - name: bundles
+  - name: transactions
+  - name: users
+  - name: mpesa
+  - name: admin
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +28,586 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/request-otp:
+    post:
+      operationId: requestOtp
+      tags: [auth]
+      summary: Request OTP for phone login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestOtpBody"
+      responses:
+        "200":
+          description: OTP sent (in dev returns the code)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestOtpResponse"
+
+  /auth/verify-otp:
+    post:
+      operationId: verifyOtp
+      tags: [auth]
+      summary: Verify OTP and login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyOtpBody"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current logged-in user
+      responses:
+        "200":
+          description: Current user (or null)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout current session
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /users/me:
+    patch:
+      operationId: updateMyProfile
+      tags: [users]
+      summary: Update my profile (name)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileBody"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /bundles:
+    get:
+      operationId: listBundles
+      tags: [bundles]
+      summary: List active bundles for shop
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [airtime, data, sms, all]
+      responses:
+        "200":
+          description: Bundles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Bundle"
+
+  /transactions:
+    get:
+      operationId: listMyTransactions
+      tags: [transactions]
+      summary: List my transactions
+      responses:
+        "200":
+          description: Transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+
+  /transactions/{id}:
+    get:
+      operationId: getTransaction
+      tags: [transactions]
+      summary: Get a transaction by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Transaction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+
+  /mpesa/stkpush:
+    post:
+      operationId: mpesaStkPush
+      tags: [mpesa]
+      summary: Initiate STK Push for a bundle purchase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StkPushBody"
+      responses:
+        "200":
+          description: STK initiated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StkPushResponse"
+
+  /mpesa/callback:
+    post:
+      operationId: mpesaCallback
+      tags: [mpesa]
+      summary: M-Pesa callback receiver
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: Acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/dashboard:
+    get:
+      operationId: adminDashboard
+      tags: [admin]
+      summary: Admin dashboard summary
+      responses:
+        "200":
+          description: Dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+
+  /admin/transactions:
+    get:
+      operationId: adminListTransactions
+      tags: [admin]
+      summary: All transactions
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, pending, paid, failed]
+      responses:
+        "200":
+          description: Transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminTransaction"
+
+  /admin/users:
+    get:
+      operationId: adminListUsers
+      tags: [admin]
+      summary: All users
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+
+  /admin/bundles:
+    get:
+      operationId: adminListBundles
+      tags: [admin]
+      summary: All bundles (incl inactive)
+      responses:
+        "200":
+          description: Bundles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Bundle"
+    post:
+      operationId: adminCreateBundle
+      tags: [admin]
+      summary: Create bundle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBundleBody"
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bundle"
+
+  /admin/bundles/{id}:
+    patch:
+      operationId: adminUpdateBundle
+      tags: [admin]
+      summary: Update bundle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBundleBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bundle"
+    delete:
+      operationId: adminDeleteBundle
+      tags: [admin]
+      summary: Delete bundle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    SuccessResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+
+    RequestOtpBody:
+      type: object
+      required: [phone]
+      properties:
+        phone:
+          type: string
+          description: Kenyan phone number (any of 07xx, 01xx, +2547xx, 2547xx)
+
+    RequestOtpResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+        devOtp:
+          type: string
+          nullable: true
+          description: Returned in development for easy testing
+
+    VerifyOtpBody:
+      type: object
+      required: [phone, code]
+      properties:
+        phone:
+          type: string
+        code:
+          type: string
+
+    User:
+      type: object
+      required: [id, phone, balance, referralCode, createdAt]
+      properties:
+        id:
+          type: integer
+        phone:
+          type: string
+        name:
+          type: string
+          nullable: true
+        balance:
+          type: number
+        referralCode:
+          type: string
+        createdAt:
+          type: string
+
+    AuthSession:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+
+    MeResponse:
+      type: object
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/User"
+            - type: "null"
+
+    UpdateProfileBody:
+      type: object
+      properties:
+        name:
+          type: string
+
+    Bundle:
+      type: object
+      required: [id, name, type, amount, sellingPrice, costPrice, active]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          type: string
+          enum: [airtime, data, sms]
+        amount:
+          type: string
+          description: Display amount (e.g. "1GB", "500", "100MB + 50min")
+        sellingPrice:
+          type: number
+        costPrice:
+          type: number
+        active:
+          type: boolean
+        validity:
+          type: string
+          nullable: true
+
+    CreateBundleBody:
+      type: object
+      required: [name, type, amount, sellingPrice, costPrice]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [airtime, data, sms]
+        amount:
+          type: string
+        sellingPrice:
+          type: number
+        costPrice:
+          type: number
+        validity:
+          type: string
+          nullable: true
+        active:
+          type: boolean
+
+    UpdateBundleBody:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [airtime, data, sms]
+        amount:
+          type: string
+        sellingPrice:
+          type: number
+        costPrice:
+          type: number
+        validity:
+          type: string
+          nullable: true
+        active:
+          type: boolean
+
+    Transaction:
+      type: object
+      required: [id, bundleId, bundleName, bundleType, recipientPhone, amount, status, createdAt]
+      properties:
+        id:
+          type: integer
+        bundleId:
+          type: integer
+        bundleName:
+          type: string
+        bundleType:
+          type: string
+        recipientPhone:
+          type: string
+        amount:
+          type: number
+        status:
+          type: string
+          enum: [pending, paid, failed]
+        mpesaCode:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+
+    AdminTransaction:
+      allOf:
+        - $ref: "#/components/schemas/Transaction"
+        - type: object
+          properties:
+            userPhone:
+              type: string
+            userName:
+              type: string
+              nullable: true
+
+    AdminUser:
+      type: object
+      required: [id, phone, balance, referralCode, createdAt, totalSpent, transactionCount]
+      properties:
+        id:
+          type: integer
+        phone:
+          type: string
+        name:
+          type: string
+          nullable: true
+        balance:
+          type: number
+        referralCode:
+          type: string
+        createdAt:
+          type: string
+        totalSpent:
+          type: number
+        transactionCount:
+          type: integer
+
+    StkPushBody:
+      type: object
+      required: [bundleId, recipientPhone, payerPhone]
+      properties:
+        bundleId:
+          type: integer
+        recipientPhone:
+          type: string
+          description: Number that receives the airtime/data
+        payerPhone:
+          type: string
+          description: M-Pesa number that gets the STK prompt
+
+    StkPushResponse:
+      type: object
+      required: [transactionId, success]
+      properties:
+        success:
+          type: boolean
+        transactionId:
+          type: integer
+        merchantRequestId:
+          type: string
+          nullable: true
+        checkoutRequestId:
+          type: string
+          nullable: true
+        customerMessage:
+          type: string
+          nullable: true
+
+    AdminDashboard:
+      type: object
+      required:
+        - salesTodayCount
+        - salesTodayAmount
+        - profitToday
+        - totalUsers
+        - newUsersToday
+        - pendingCount
+        - paidCount
+        - recentTransactions
+        - salesByType
+      properties:
+        salesTodayCount:
+          type: integer
+        salesTodayAmount:
+          type: number
+        profitToday:
+          type: number
+        totalUsers:
+          type: integer
+        newUsersToday:
+          type: integer
+        pendingCount:
+          type: integer
+        paidCount:
+          type: integer
+        salesByType:
+          type: array
+          items:
+            type: object
+            required: [type, count, amount]
+            properties:
+              type:
+                type: string
+              count:
+                type: integer
+              amount:
+                type: number
+        recentTransactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTransaction"
