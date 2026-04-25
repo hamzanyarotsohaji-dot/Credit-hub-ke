@@ -17,7 +17,8 @@ export function AdminTransactions() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'paid': return 'bg-green-100 text-green-800 hover:bg-green-100';
+      case 'completed': return 'bg-green-100 text-green-800 hover:bg-green-100';
+      case 'paid': return 'bg-blue-100 text-blue-800 hover:bg-blue-100';
       case 'pending': return 'bg-amber-100 text-amber-800 hover:bg-amber-100';
       case 'failed': return 'bg-red-100 text-red-800 hover:bg-red-100';
       default: return 'bg-gray-100 text-gray-800 hover:bg-gray-100';

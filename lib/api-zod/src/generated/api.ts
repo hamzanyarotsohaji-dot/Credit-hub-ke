@@ -46,6 +46,7 @@ export const VerifyOtpResponse = zod.object({
     name: zod.string().nullish(),
     balance: zod.number(),
     referralCode: zod.string(),
+    isAdmin: zod.boolean(),
     createdAt: zod.string(),
   }),
 });
@@ -62,6 +63,7 @@ export const GetMeResponse = zod.object({
         name: zod.string().nullish(),
         balance: zod.number(),
         referralCode: zod.string(),
+        isAdmin: zod.boolean(),
         createdAt: zod.string(),
       }),
       zod.null(),
@@ -89,6 +91,7 @@ export const UpdateMyProfileResponse = zod.object({
   name: zod.string().nullish(),
   balance: zod.number(),
   referralCode: zod.string(),
+  isAdmin: zod.boolean(),
   createdAt: zod.string(),
 });
 
@@ -123,7 +126,7 @@ export const ListMyTransactionsResponseItem = zod.object({
   bundleType: zod.string(),
   recipientPhone: zod.string(),
   amount: zod.number(),
-  status: zod.enum(["pending", "paid", "failed"]),
+  status: zod.enum(["pending", "paid", "completed", "failed"]),
   mpesaCode: zod.string().nullish(),
   createdAt: zod.string(),
 });
@@ -145,7 +148,7 @@ export const GetTransactionResponse = zod.object({
   bundleType: zod.string(),
   recipientPhone: zod.string(),
   amount: zod.number(),
-  status: zod.enum(["pending", "paid", "failed"]),
+  status: zod.enum(["pending", "paid", "completed", "failed"]),
   mpesaCode: zod.string().nullish(),
   createdAt: zod.string(),
 });
@@ -205,7 +208,7 @@ export const AdminDashboardResponse = zod.object({
         bundleType: zod.string(),
         recipientPhone: zod.string(),
         amount: zod.number(),
-        status: zod.enum(["pending", "paid", "failed"]),
+        status: zod.enum(["pending", "paid", "completed", "failed"]),
         mpesaCode: zod.string().nullish(),
         createdAt: zod.string(),
       })
@@ -233,7 +236,7 @@ export const AdminListTransactionsResponseItem = zod
     bundleType: zod.string(),
     recipientPhone: zod.string(),
     amount: zod.number(),
-    status: zod.enum(["pending", "paid", "failed"]),
+    status: zod.enum(["pending", "paid", "completed", "failed"]),
     mpesaCode: zod.string().nullish(),
     createdAt: zod.string(),
   })

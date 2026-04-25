@@ -35,6 +35,7 @@ export interface User {
   name?: string | null;
   balance: number;
   referralCode: string;
+  isAdmin: boolean;
   createdAt: string;
 }
 
@@ -114,6 +115,7 @@ export type TransactionStatus =
 export const TransactionStatus = {
   pending: "pending",
   paid: "paid",
+  completed: "completed",
   failed: "failed",
 } as const;
 

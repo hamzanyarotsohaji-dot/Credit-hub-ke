@@ -377,7 +377,7 @@ components:
 
     User:
       type: object
-      required: [id, phone, balance, referralCode, createdAt]
+      required: [id, phone, balance, referralCode, isAdmin, createdAt]
       properties:
         id:
           type: integer
@@ -390,6 +390,8 @@ components:
           type: number
         referralCode:
           type: string
+        isAdmin:
+          type: boolean
         createdAt:
           type: string
 
@@ -497,7 +499,7 @@ components:
           type: number
         status:
           type: string
-          enum: [pending, paid, failed]
+          enum: [pending, paid, completed, failed]
         mpesaCode:
           type: string
           nullable: true

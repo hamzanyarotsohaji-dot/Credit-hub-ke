@@ -5,6 +5,96 @@ import { db, transactionsTable, bundlesTable } from "@workspace/db";
 import { attachUser, requireAuth, type AuthRequest } from "../lib/auth";
 import { normalizeKenyanPhone } from "../lib/phone";
 import { getCallbackUrl, stkPush } from "../lib/mpesa";
+import { sendAirtime, isAirtimeConfigured } from "../lib/africastalking";
+import { logger } from "../lib/logger";
+
+interface BundleRow {
+  id: number;
+  type: string;
+  amount: string;
+  sellingPrice: string;
+}
+
+/**
+ * Deliver airtime for a paid transaction. Updates the transaction row to
+ * `completed` on success or `failed` on delivery error. Always swallows
+ * errors so the M-Pesa callback handler stays resilient.
+ */
+async function deliverAirtimeForTransaction(args: {
+  txId: number;
+  recipientPhone: string;
+  bundle: BundleRow;
+}): Promise<void> {
+  const { txId, recipientPhone, bundle } = args;
+
+  if (!isAirtimeConfigured()) {
+    logger.warn(
+      { txId },
+      "Africa's Talking not configured; leaving transaction as 'paid'",
+    );
+    return;
+  }
+
+  // For airtime bundles, send the face value (e.g. KSh 50). For data/SMS
+  // bundles AT cannot deliver the bundle directly via this API, so we send
+  // airtime equivalent to what the user paid.
+  let airtimeAmount = Number(bundle.sellingPrice);
+  if (bundle.type === "airtime") {
+    const parsed = Number(bundle.amount);
+    if (Number.isFinite(parsed) && parsed > 0) airtimeAmount = parsed;
+  }
+  if (!Number.isFinite(airtimeAmount) || airtimeAmount <= 0) {
+    logger.warn({ txId, bundle }, "Invalid airtime amount; skipping delivery");
+    return;
+  }
+
+  try {
+    const result = await sendAirtime({
+      phoneNumber: recipientPhone,
+      amount: airtimeAmount,
+    });
+
+    if (result.success) {
+      await db
+        .update(transactionsTable)
+        .set({
+          status: "completed",
+          resultDesc: `Airtime ${result.status} (req ${result.requestId ?? "n/a"})`,
+          updatedAt: new Date(),
+        })
+        .where(eq(transactionsTable.id, txId));
+      logger.info(
+        { txId, recipientPhone, airtimeAmount, requestId: result.requestId },
+        "Airtime delivered",
+      );
+    } else {
+      await db
+        .update(transactionsTable)
+        .set({
+          status: "failed",
+          resultDesc:
+            (result.errorMessage ?? `Airtime ${result.status}`).slice(0, 200),
+          updatedAt: new Date(),
+        })
+        .where(eq(transactionsTable.id, txId));
+      logger.warn(
+        { txId, status: result.status, error: result.errorMessage },
+        "Airtime delivery rejected by Africa's Talking",
+      );
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Airtime send failed";
+    await db
+      .update(transactionsTable)
+      .set({
+        status: "failed",
+        resultDesc: `Airtime delivery error: ${message}`.slice(0, 200),
+        updatedAt: new Date(),
+      })
+      .where(eq(transactionsTable.id, txId));
+    logger.error({ err, txId }, "Airtime delivery threw");
+  }
+}
 
 const router: IRouter = Router();
 
@@ -142,6 +232,31 @@ router.post("/mpesa/callback", async (req, res) => {
         })
         .where(eq(transactionsTable.id, tx.id));
       req.log.info({ txId: tx.id, receipt }, "Transaction paid");
+
+      // Look up the bundle and trigger airtime delivery via Africa's Talking.
+      const [bundle] = await db
+        .select({
+          id: bundlesTable.id,
+          type: bundlesTable.type,
+          amount: bundlesTable.amount,
+          sellingPrice: bundlesTable.sellingPrice,
+        })
+        .from(bundlesTable)
+        .where(eq(bundlesTable.id, tx.bundleId))
+        .limit(1);
+
+      if (bundle) {
+        await deliverAirtimeForTransaction({
+          txId: tx.id,
+          recipientPhone: tx.recipientPhone,
+          bundle,
+        });
+      } else {
+        req.log.warn(
+          { txId: tx.id, bundleId: tx.bundleId },
+          "Bundle missing at airtime delivery time",
+        );
+      }
     } else {
       await db
         .update(transactionsTable)

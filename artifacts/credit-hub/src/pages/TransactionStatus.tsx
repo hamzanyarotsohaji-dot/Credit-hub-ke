@@ -11,12 +11,16 @@ export function TransactionStatus() {
   const [, setLocation] = useLocation();
   const txId = Number(id);
 
-  const { data: transaction, isLoading, refetch } = useGetTransaction(txId, { 
-    query: { 
-      enabled: !!txId, 
-      queryKey: getGetTransactionQueryKey(txId), 
-      refetchInterval: (query) => query.state.data?.status === 'pending' ? 3000 : false 
-    } 
+  const { data: transaction, isLoading, refetch } = useGetTransaction(txId, {
+    query: {
+      enabled: !!txId,
+      queryKey: getGetTransactionQueryKey(txId),
+      refetchInterval: (query) => {
+        const s = query.state.data?.status;
+        // keep polling while we are waiting for either M-Pesa or airtime delivery
+        return s === 'pending' || s === 'paid' ? 3000 : false;
+      },
+    },
   });
 
   if (isLoading) {
@@ -39,8 +43,10 @@ export function TransactionStatus() {
   }
 
   const isPending = transaction.status === 'pending';
-  const isPaid = transaction.status === 'paid';
+  const isDelivering = transaction.status === 'paid';
+  const isCompleted = transaction.status === 'completed';
   const isFailed = transaction.status === 'failed';
+  const isDone = isCompleted || isFailed;
 
   return (
     <div className="flex flex-col flex-1 p-4 pb-20 bg-gray-50 min-h-[100dvh]">
@@ -65,14 +71,32 @@ export function TransactionStatus() {
           </>
         )}
 
-        {isPaid && (
+        {isDelivering && (
+          <>
+            <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6 relative">
+              <div className="absolute inset-0 border-4 border-blue-400 rounded-full border-t-transparent animate-spin"></div>
+              <RefreshCw className="w-12 h-12 text-blue-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Sending Airtime…</h2>
+            <p className="text-gray-500 text-center max-w-[280px]">
+              Payment received. We're delivering your bundle to {transaction.recipientPhone}.
+            </p>
+            {transaction.mpesaCode && (
+              <div className="mt-4 px-4 py-2 bg-gray-100 rounded-lg text-gray-700 font-mono font-bold tracking-widest text-lg border border-gray-200">
+                {transaction.mpesaCode}
+              </div>
+            )}
+          </>
+        )}
+
+        {isCompleted && (
           <>
             <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6">
               <CheckCircle2 className="w-14 h-14 text-green-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Airtime Delivered!</h2>
             <p className="text-gray-500 text-center max-w-[280px]">
-              Your bundle has been processed successfully.
+              Your bundle has been sent to {transaction.recipientPhone}.
             </p>
             {transaction.mpesaCode && (
               <div className="mt-4 px-4 py-2 bg-gray-100 rounded-lg text-gray-700 font-mono font-bold tracking-widest text-lg border border-gray-200">
@@ -120,7 +144,7 @@ export function TransactionStatus() {
         </Button>
       )}
 
-      {(isPaid || isFailed) && (
+      {isDone && (
         <Button onClick={() => setLocation("/home")} className="w-full h-14 text-lg font-bold rounded-xl">
           Return to Home
         </Button>
