@@ -19,6 +19,8 @@ import type {
 import type {
   AdminDashboard,
   AdminListTransactionsParams,
+  AdminSalesReport,
+  AdminSalesReportParams,
   AdminTransaction,
   AdminUser,
   AuthSession,
@@ -1021,6 +1023,103 @@ export function useAdminDashboard<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getAdminDashboardQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Daily sales report
+ */
+export const getAdminSalesReportUrl = (params?: AdminSalesReportParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/sales-report?${stringifiedParams}`
+    : `/api/admin/sales-report`;
+};
+
+export const adminSalesReport = async (
+  params?: AdminSalesReportParams,
+  options?: RequestInit,
+): Promise<AdminSalesReport> => {
+  return customFetch<AdminSalesReport>(getAdminSalesReportUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAdminSalesReportQueryKey = (
+  params?: AdminSalesReportParams,
+) => {
+  return [`/api/admin/sales-report`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminSalesReportQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminSalesReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: AdminSalesReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminSalesReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminSalesReportQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminSalesReport>>
+  > = ({ signal }) => adminSalesReport(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminSalesReport>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminSalesReportQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminSalesReport>>
+>;
+export type AdminSalesReportQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Daily sales report
+ */
+
+export function useAdminSalesReport<
+  TData = Awaited<ReturnType<typeof adminSalesReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: AdminSalesReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminSalesReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminSalesReportQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

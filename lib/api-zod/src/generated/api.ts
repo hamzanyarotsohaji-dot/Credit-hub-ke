@@ -222,6 +222,71 @@ export const AdminDashboardResponse = zod.object({
 });
 
 /**
+ * @summary Daily sales report
+ */
+export const AdminSalesReportQueryParams = zod.object({
+  date: zod
+    .date()
+    .optional()
+    .describe("Report date in YYYY-MM-DD format. Defaults to today."),
+});
+
+export const AdminSalesReportResponse = zod.object({
+  date: zod.string(),
+  revenue: zod.number(),
+  profit: zod.number(),
+  transactionCount: zod.number(),
+  completedCount: zod.number(),
+  paidCount: zod.number(),
+  failedCount: zod.number(),
+  pendingCount: zod.number(),
+  byType: zod.array(
+    zod.object({
+      type: zod.string(),
+      count: zod.number(),
+      revenue: zod.number(),
+      profit: zod.number(),
+    }),
+  ),
+  byHour: zod.array(
+    zod.object({
+      hour: zod.number(),
+      count: zod.number(),
+      revenue: zod.number(),
+    }),
+  ),
+  topBundles: zod.array(
+    zod.object({
+      bundleId: zod.string(),
+      name: zod.string(),
+      type: zod.string(),
+      count: zod.number(),
+      revenue: zod.number(),
+    }),
+  ),
+  recentFailures: zod.array(
+    zod
+      .object({
+        id: zod.number(),
+        bundleId: zod.number(),
+        bundleName: zod.string(),
+        bundleType: zod.string(),
+        recipientPhone: zod.string(),
+        amount: zod.number(),
+        status: zod.enum(["pending", "paid", "completed", "failed"]),
+        mpesaCode: zod.string().nullish(),
+        createdAt: zod.string(),
+      })
+      .and(
+        zod.object({
+          userPhone: zod.string().optional(),
+          userName: zod.string().nullish(),
+        }),
+      ),
+  ),
+});
+
+/**
  * @summary All transactions
  */
 export const AdminListTransactionsQueryParams = zod.object({

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Package, ListOrdered, Users } from "lucide-react";
+import { LayoutDashboard, Package, ListOrdered, Users, BarChart3 } from "lucide-react";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -12,6 +12,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "Bundles", href: "/admin/bundles", icon: Package },
     { name: "Transactions", href: "/admin/transactions", icon: ListOrdered },
+    { name: "Reports", href: "/admin/reports", icon: BarChart3 },
     { name: "Users", href: "/admin/users", icon: Users },
   ];
 

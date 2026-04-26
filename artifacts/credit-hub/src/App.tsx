@@ -14,6 +14,7 @@ import { AdminDashboard } from "@/pages/AdminDashboard";
 import { AdminBundles } from "@/pages/AdminBundles";
 import { AdminTransactions } from "@/pages/AdminTransactions";
 import { AdminUsers } from "@/pages/AdminUsers";
+import { SalesReport } from "@/pages/SalesReport";
 
 function GuardedRoute({ component: Component, adminOnly = false }: { component: any, adminOnly?: boolean }) {
   const [location, setLocation] = useLocation();
@@ -120,6 +121,13 @@ export default function App() {
         {() => (
           <AdminLayout>
             <GuardedRoute component={AdminTransactions} adminOnly />
+          </AdminLayout>
+        )}
+      </Route>
+      <Route path="/admin/reports">
+        {() => (
+          <AdminLayout>
+            <GuardedRoute component={SalesReport} adminOnly />
           </AdminLayout>
         )}
       </Route>

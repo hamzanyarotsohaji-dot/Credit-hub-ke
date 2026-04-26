@@ -166,6 +166,42 @@ export interface StkPushResponse {
   customerMessage?: string | null;
 }
 
+export type AdminSalesReportByTypeItem = {
+  type: string;
+  count: number;
+  revenue: number;
+  profit: number;
+};
+
+export type AdminSalesReportByHourItem = {
+  hour: number;
+  count: number;
+  revenue: number;
+};
+
+export type AdminSalesReportTopBundlesItem = {
+  bundleId: string;
+  name: string;
+  type: string;
+  count: number;
+  revenue: number;
+};
+
+export interface AdminSalesReport {
+  date: string;
+  revenue: number;
+  profit: number;
+  transactionCount: number;
+  completedCount: number;
+  paidCount: number;
+  failedCount: number;
+  pendingCount: number;
+  byType: AdminSalesReportByTypeItem[];
+  byHour: AdminSalesReportByHourItem[];
+  topBundles: AdminSalesReportTopBundlesItem[];
+  recentFailures: AdminTransaction[];
+}
+
 export type AdminDashboardSalesByTypeItem = {
   type: string;
   count: number;
@@ -200,6 +236,13 @@ export const ListBundlesType = {
 } as const;
 
 export type MpesaCallbackBody = { [key: string]: unknown };
+
+export type AdminSalesReportParams = {
+  /**
+   * Report date in YYYY-MM-DD format. Defaults to today.
+   */
+  date?: string;
+};
 
 export type AdminListTransactionsParams = {
   status?: AdminListTransactionsStatus;

@@ -136,6 +136,145 @@ router.get(
 );
 
 router.get(
+  "/admin/sales-report",
+  requireAdmin,
+  async (req: AuthRequest, res: Response) => {
+    const dateParam = typeof req.query["date"] === "string" ? req.query["date"] : "";
+    const parsedDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? new Date(dateParam + "T00:00:00.000Z") : null;
+    const start = parsedDate ?? startOfTodayUtc();
+    const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    const dateLabel = start.toISOString().slice(0, 10);
+
+    const successful = and(
+      sql`${transactionsTable.status} IN ('paid','completed')`,
+      gte(transactionsTable.createdAt, start),
+      sql`${transactionsTable.createdAt} < ${end}`,
+    );
+    const inDay = and(
+      gte(transactionsTable.createdAt, start),
+      sql`${transactionsTable.createdAt} < ${end}`,
+    );
+
+    const [totals] = await db
+      .select({
+        revenue: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)::text`,
+        profit: sql<string>`COALESCE(SUM(${transactionsTable.amount} - ${bundlesTable.costPrice}), 0)::text`,
+        cnt: sql<number>`COUNT(*)::int`,
+      })
+      .from(transactionsTable)
+      .leftJoin(bundlesTable, eq(transactionsTable.bundleId, bundlesTable.id))
+      .where(successful);
+
+    const statusRows = await db
+      .select({
+        status: transactionsTable.status,
+        cnt: sql<number>`COUNT(*)::int`,
+      })
+      .from(transactionsTable)
+      .where(inDay)
+      .groupBy(transactionsTable.status);
+    const statusCount = (s: string) => Number(statusRows.find((r) => r.status === s)?.cnt ?? 0);
+
+    const byTypeRows = await db
+      .select({
+        type: bundlesTable.type,
+        cnt: sql<number>`COUNT(*)::int`,
+        revenue: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)::text`,
+        profit: sql<string>`COALESCE(SUM(${transactionsTable.amount} - ${bundlesTable.costPrice}), 0)::text`,
+      })
+      .from(transactionsTable)
+      .leftJoin(bundlesTable, eq(transactionsTable.bundleId, bundlesTable.id))
+      .where(successful)
+      .groupBy(bundlesTable.type);
+
+    const byHourRows = await db
+      .select({
+        hour: sql<number>`EXTRACT(HOUR FROM ${transactionsTable.createdAt})::int`,
+        cnt: sql<number>`COUNT(*)::int`,
+        revenue: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)::text`,
+      })
+      .from(transactionsTable)
+      .where(successful)
+      .groupBy(sql`EXTRACT(HOUR FROM ${transactionsTable.createdAt})`);
+    const hourMap = new Map(byHourRows.map((r) => [Number(r.hour), r]));
+    const byHour = Array.from({ length: 24 }, (_, h) => {
+      const r = hourMap.get(h);
+      return {
+        hour: h,
+        count: r ? Number(r.cnt) : 0,
+        revenue: r ? Number(r.revenue) : 0,
+      };
+    });
+
+    const topRows = await db
+      .select({
+        bundleId: transactionsTable.bundleId,
+        name: bundlesTable.name,
+        type: bundlesTable.type,
+        cnt: sql<number>`COUNT(*)::int`,
+        revenue: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)::text`,
+      })
+      .from(transactionsTable)
+      .leftJoin(bundlesTable, eq(transactionsTable.bundleId, bundlesTable.id))
+      .where(successful)
+      .groupBy(transactionsTable.bundleId, bundlesTable.name, bundlesTable.type)
+      .orderBy(sql`COUNT(*) DESC`)
+      .limit(5);
+
+    const failureRows = await db
+      .select({
+        t: transactionsTable,
+        bundle: bundlesTable,
+        user: usersTable,
+      })
+      .from(transactionsTable)
+      .leftJoin(bundlesTable, eq(transactionsTable.bundleId, bundlesTable.id))
+      .leftJoin(usersTable, eq(transactionsTable.userId, usersTable.id))
+      .where(and(eq(transactionsTable.status, "failed"), inDay))
+      .orderBy(desc(transactionsTable.createdAt))
+      .limit(10);
+
+    res.json({
+      date: dateLabel,
+      revenue: Number(totals?.revenue ?? 0),
+      profit: Number(totals?.profit ?? 0),
+      transactionCount: Number(totals?.cnt ?? 0),
+      completedCount: statusCount("completed"),
+      paidCount: statusCount("paid"),
+      failedCount: statusCount("failed"),
+      pendingCount: statusCount("pending"),
+      byType: byTypeRows.map((r) => ({
+        type: r.type ?? "unknown",
+        count: Number(r.cnt ?? 0),
+        revenue: Number(r.revenue ?? 0),
+        profit: Number(r.profit ?? 0),
+      })),
+      byHour,
+      topBundles: topRows.map((r) => ({
+        bundleId: r.bundleId,
+        name: r.name ?? "Bundle",
+        type: r.type ?? "unknown",
+        count: Number(r.cnt ?? 0),
+        revenue: Number(r.revenue ?? 0),
+      })),
+      recentFailures: failureRows.map(({ t, bundle, user }) => ({
+        id: t.id,
+        bundleId: t.bundleId,
+        bundleName: bundle?.name ?? "Bundle",
+        bundleType: bundle?.type ?? "airtime",
+        recipientPhone: t.recipientPhone,
+        amount: Number(t.amount),
+        status: t.status,
+        mpesaCode: t.mpesaCode,
+        createdAt: t.createdAt.toISOString(),
+        userPhone: user?.phone ?? "",
+        userName: user?.name ?? null,
+      })),
+    });
+  },
+);
+
+router.get(
   "/admin/transactions",
   requireAdmin,
   async (req: AuthRequest, res: Response) => {

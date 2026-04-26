@@ -121,6 +121,7 @@ export function AdminBundles() {
               <TableHead>Type</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Price / Cost</TableHead>
+              <TableHead>Profit</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -134,6 +135,11 @@ export function AdminBundles() {
                 <TableCell>
                   <div className="font-medium text-primary">{formatCurrency(bundle.sellingPrice)}</div>
                   <div className="text-xs text-muted-foreground">{formatCurrency(bundle.costPrice)}</div>
+                </TableCell>
+                <TableCell>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                    +{formatCurrency(Number(bundle.sellingPrice) - Number(bundle.costPrice))}
+                  </span>
                 </TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${bundle.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>

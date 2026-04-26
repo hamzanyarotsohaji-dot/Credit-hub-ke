@@ -220,6 +220,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/AdminDashboard"
 
+  /admin/sales-report:
+    get:
+      operationId: adminSalesReport
+      tags: [admin]
+      summary: Daily sales report
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: Report date in YYYY-MM-DD format. Defaults to today.
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Sales report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSalesReport"
+
   /admin/transactions:
     get:
       operationId: adminListTransactions
@@ -569,6 +590,73 @@ components:
         customerMessage:
           type: string
           nullable: true
+
+    AdminSalesReport:
+      type: object
+      required:
+        - date
+        - revenue
+        - profit
+        - transactionCount
+        - completedCount
+        - paidCount
+        - failedCount
+        - pendingCount
+        - byType
+        - byHour
+        - topBundles
+        - recentFailures
+      properties:
+        date:
+          type: string
+        revenue:
+          type: number
+        profit:
+          type: number
+        transactionCount:
+          type: integer
+        completedCount:
+          type: integer
+        paidCount:
+          type: integer
+        failedCount:
+          type: integer
+        pendingCount:
+          type: integer
+        byType:
+          type: array
+          items:
+            type: object
+            required: [type, count, revenue, profit]
+            properties:
+              type: { type: string }
+              count: { type: integer }
+              revenue: { type: number }
+              profit: { type: number }
+        byHour:
+          type: array
+          items:
+            type: object
+            required: [hour, count, revenue]
+            properties:
+              hour: { type: integer }
+              count: { type: integer }
+              revenue: { type: number }
+        topBundles:
+          type: array
+          items:
+            type: object
+            required: [bundleId, name, type, count, revenue]
+            properties:
+              bundleId: { type: string }
+              name: { type: string }
+              type: { type: string }
+              count: { type: integer }
+              revenue: { type: number }
+        recentFailures:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTransaction"
 
     AdminDashboard:
       type: object
