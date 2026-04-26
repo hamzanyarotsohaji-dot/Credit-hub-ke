@@ -123,7 +123,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [airtime, data, sms, all]
+            enum: [airtime, data, sms, minutes, all]
       responses:
         "200":
           description: Bundles
@@ -426,7 +426,7 @@ components:
           type: string
         type:
           type: string
-          enum: [airtime, data, sms]
+          enum: [airtime, data, sms, minutes]
         amount:
           type: string
           description: Display amount (e.g. "1GB", "500", "100MB + 50min")
@@ -448,7 +448,7 @@ components:
           type: string
         type:
           type: string
-          enum: [airtime, data, sms]
+          enum: [airtime, data, sms, minutes]
         amount:
           type: string
         sellingPrice:
@@ -468,7 +468,7 @@ components:
           type: string
         type:
           type: string
-          enum: [airtime, data, sms]
+          enum: [airtime, data, sms, minutes]
         amount:
           type: string
         sellingPrice:

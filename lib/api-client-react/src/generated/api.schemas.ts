@@ -57,6 +57,7 @@ export const BundleType = {
   airtime: "airtime",
   data: "data",
   sms: "sms",
+  minutes: "minutes",
 } as const;
 
 export interface Bundle {
@@ -78,6 +79,7 @@ export const CreateBundleBodyType = {
   airtime: "airtime",
   data: "data",
   sms: "sms",
+  minutes: "minutes",
 } as const;
 
 export interface CreateBundleBody {
@@ -97,6 +99,7 @@ export const UpdateBundleBodyType = {
   airtime: "airtime",
   data: "data",
   sms: "sms",
+  minutes: "minutes",
 } as const;
 
 export interface UpdateBundleBody {
@@ -192,6 +195,7 @@ export const ListBundlesType = {
   airtime: "airtime",
   data: "data",
   sms: "sms",
+  minutes: "minutes",
   all: "all",
 } as const;
 

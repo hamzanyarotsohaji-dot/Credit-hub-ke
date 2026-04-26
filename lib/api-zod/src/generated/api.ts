@@ -99,13 +99,13 @@ export const UpdateMyProfileResponse = zod.object({
  * @summary List active bundles for shop
  */
 export const ListBundlesQueryParams = zod.object({
-  type: zod.enum(["airtime", "data", "sms", "all"]).optional(),
+  type: zod.enum(["airtime", "data", "sms", "minutes", "all"]).optional(),
 });
 
 export const ListBundlesResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
-  type: zod.enum(["airtime", "data", "sms"]),
+  type: zod.enum(["airtime", "data", "sms", "minutes"]),
   amount: zod
     .string()
     .describe('Display amount (e.g. \"1GB\", \"500\", \"100MB + 50min\")'),
@@ -271,7 +271,7 @@ export const AdminListUsersResponse = zod.array(AdminListUsersResponseItem);
 export const AdminListBundlesResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
-  type: zod.enum(["airtime", "data", "sms"]),
+  type: zod.enum(["airtime", "data", "sms", "minutes"]),
   amount: zod
     .string()
     .describe('Display amount (e.g. \"1GB\", \"500\", \"100MB + 50min\")'),
@@ -287,7 +287,7 @@ export const AdminListBundlesResponse = zod.array(AdminListBundlesResponseItem);
  */
 export const AdminCreateBundleBody = zod.object({
   name: zod.string(),
-  type: zod.enum(["airtime", "data", "sms"]),
+  type: zod.enum(["airtime", "data", "sms", "minutes"]),
   amount: zod.string(),
   sellingPrice: zod.number(),
   costPrice: zod.number(),
@@ -298,7 +298,7 @@ export const AdminCreateBundleBody = zod.object({
 export const AdminCreateBundleResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
-  type: zod.enum(["airtime", "data", "sms"]),
+  type: zod.enum(["airtime", "data", "sms", "minutes"]),
   amount: zod
     .string()
     .describe('Display amount (e.g. \"1GB\", \"500\", \"100MB + 50min\")'),
@@ -317,7 +317,7 @@ export const AdminUpdateBundleParams = zod.object({
 
 export const AdminUpdateBundleBody = zod.object({
   name: zod.string().optional(),
-  type: zod.enum(["airtime", "data", "sms"]).optional(),
+  type: zod.enum(["airtime", "data", "sms", "minutes"]).optional(),
   amount: zod.string().optional(),
   sellingPrice: zod.number().optional(),
   costPrice: zod.number().optional(),
@@ -328,7 +328,7 @@ export const AdminUpdateBundleBody = zod.object({
 export const AdminUpdateBundleResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
-  type: zod.enum(["airtime", "data", "sms"]),
+  type: zod.enum(["airtime", "data", "sms", "minutes"]),
   amount: zod
     .string()
     .describe('Display amount (e.g. \"1GB\", \"500\", \"100MB + 50min\")'),

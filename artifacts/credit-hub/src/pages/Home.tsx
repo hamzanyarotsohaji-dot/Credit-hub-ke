@@ -5,12 +5,12 @@ import { formatCurrency } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Wifi, Phone, MessageSquare, Package } from "lucide-react";
+import { Loader2, Wifi, Phone, MessageSquare, Package, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function Home() {
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<"all" | "airtime" | "data" | "sms">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "airtime" | "data" | "sms" | "minutes">("all");
   const { data: bundles, isLoading } = useListBundles({ type: activeTab === "all" ? undefined : activeTab });
 
   const getIcon = (type: string) => {
@@ -18,7 +18,18 @@ export function Home() {
       case "data": return <Wifi className="w-5 h-5" />;
       case "airtime": return <Phone className="w-5 h-5" />;
       case "sms": return <MessageSquare className="w-5 h-5" />;
+      case "minutes": return <Clock className="w-5 h-5" />;
       default: return null;
+    }
+  };
+
+  const getColor = (type: string) => {
+    switch (type) {
+      case "data": return "bg-blue-100 text-blue-600";
+      case "airtime": return "bg-green-100 text-green-600";
+      case "sms": return "bg-purple-100 text-purple-600";
+      case "minutes": return "bg-amber-100 text-amber-600";
+      default: return "bg-gray-100 text-gray-600";
     }
   };
 
@@ -30,11 +41,12 @@ export function Home() {
       </div>
 
       <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="w-full mb-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="airtime">Airtime</TabsTrigger>
           <TabsTrigger value="data">Data</TabsTrigger>
           <TabsTrigger value="sms">SMS</TabsTrigger>
+          <TabsTrigger value="minutes">Mins</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -55,7 +67,7 @@ export function Home() {
               <Card className="overflow-hidden border border-gray-200 shadow-sm cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setLocation(`/buy/${bundle.id}`)}>
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${bundle.type === 'data' ? 'bg-blue-100 text-blue-600' : bundle.type === 'airtime' ? 'bg-green-100 text-green-600' : 'bg-purple-100 text-purple-600'}`}>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getColor(bundle.type)}`}>
                       {getIcon(bundle.type)}
                     </div>
                     <div>

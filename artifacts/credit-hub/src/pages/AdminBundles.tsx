@@ -20,7 +20,7 @@ import { type Bundle } from "@workspace/api-client-react";
 
 const bundleSchema = z.object({
   name: z.string().min(2),
-  type: z.enum(["airtime", "data", "sms"]),
+  type: z.enum(["airtime", "data", "sms", "minutes"]),
   amount: z.string().min(1),
   sellingPrice: z.coerce.number().min(0),
   costPrice: z.coerce.number().min(0),
@@ -182,6 +182,7 @@ export function AdminBundles() {
                         <SelectItem value="data">Data</SelectItem>
                         <SelectItem value="airtime">Airtime</SelectItem>
                         <SelectItem value="sms">SMS</SelectItem>
+                        <SelectItem value="minutes">Minutes</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
