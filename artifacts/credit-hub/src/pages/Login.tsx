@@ -1,157 +1,135 @@
+import { z } from "zod";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useRequestOtp, useVerifyOtp, getGetMeQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { normalizePhone } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useToast } from "@/hooks/use-toast";
-import { Phone } from "lucide-react";
+import { Mail, Lock, User } from "lucide-react";
 
-const phoneSchema = z.object({
-  phone: z.string().min(9, "Enter a valid phone number").transform(normalizePhone),
-});
-
-const otpSchema = z.object({
-  code: z.string().length(4, "OTP must be 4 digits"),
+const authSchema = z.object({
+  email: z.string().email("Weka email valid"),
+  password: z.string().min(6, "Password lazima iwe 6+ characters"),
+  mpesaNumber: z.string().min(10, "Weka namba ya M-Pesa").optional(),
 });
 
 export function Login() {
   const [, setLocation] = useLocation();
+  const [isSignup, setIsSignup] = useState(false);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  const [step, setStep] = useState<"phone" | "otp">("phone");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [devOtp, setDevOtp] = useState<string | null>(null);
-
-  const requestOtp = useRequestOtp();
-  const verifyOtp = useVerifyOtp();
-
-  const phoneForm = useForm<z.infer<typeof phoneSchema>>({
-    resolver: zodResolver(phoneSchema),
-    defaultValues: { phone: "" },
+  const form = useForm<z.infer<typeof authSchema>>({
+    resolver: zodResolver(authSchema),
+    defaultValues: { email: "", password: "", mpesaNumber: "" },
   });
 
-  const otpForm = useForm<z.infer<typeof otpSchema>>({
-    resolver: zodResolver(otpSchema),
-    defaultValues: { code: "" },
-  });
-
-  function onPhoneSubmit(values: z.infer<typeof phoneSchema>) {
-    requestOtp.mutate({ data: { phone: values.phone } }, {
-      onSuccess: (res) => {
-        setPhoneNumber(values.phone);
-        setStep("otp");
-        if (res.devOtp) {
-          setDevOtp(res.devOtp);
-          otpForm.setValue("code", res.devOtp);
-        }
-      },
-      onError: (err: any) => {
-        toast({
-          title: "Failed to request OTP",
-          description: err?.message || "Please try again",
-          variant: "destructive"
-        });
+  const onSubmit = async (values: z.infer<typeof authSchema>) => {
+    try {
+      const endpoint = isSignup ? '/api/signup' : '/api/login';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+      
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed');
       }
-    });
-  }
-
-  function onOtpSubmit(values: z.infer<typeof otpSchema>) {
-    verifyOtp.mutate({ data: { phone: phoneNumber, code: values.code } }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-        setLocation("/home");
-      },
-      onError: (err: any) => {
-        toast({
-          title: "Verification failed",
-          description: err?.message || "Invalid OTP code",
-          variant: "destructive"
-        });
-      }
-    });
-  }
+      
+      const data = await res.json();
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      toast({ title: isSignup ? "Account Created!" : "Login Success!" });
+      setLocation('/');
+    } catch (error: any) {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Check email ama password", 
+        variant: "destructive" 
+      });
+    }
+  };
 
   return (
-    <div className="min-h-[100dvh] max-w-md mx-auto bg-white flex flex-col px-6 py-12">
-      <div className="flex-1 flex flex-col justify-center">
-        <div className="mb-10 text-center">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Phone className="w-8 h-8 text-primary" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Credit Hub KE</h1>
-          <p className="text-gray-500">Your everyday local credit kiosk.</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+          {isSignup ? "Create Account" : "Login"} - Credit Hub KE
+        </h2>
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input {...field} type="email" placeholder="you@gmail.com" className="pl-10" />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        {step === "phone" ? (
-          <Form {...phoneForm}>
-            <form onSubmit={phoneForm.handleSubmit(onPhoneSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input {...field} type="password" placeholder="******" className="pl-10" />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {isSignup && (
               <FormField
-                control={phoneForm.control}
-                name="phone"
+                control={form.control}
+                name="mpesaNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
+                    <FormLabel>M-Pesa Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="07XX XXX XXX" type="tel" {...field} className="text-lg h-12" />
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input {...field} placeholder="0712345678" className="pl-10" />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full h-12 text-lg font-medium" disabled={requestOtp.isPending}>
-                {requestOtp.isPending ? "Sending..." : "Login"}
-              </Button>
-            </form>
-          </Form>
-        ) : (
-          <Form {...otpForm}>
-            <form onSubmit={otpForm.handleSubmit(onOtpSubmit)} className="space-y-8 flex flex-col items-center">
-              <div className="text-center">
-                <p className="text-gray-600 mb-2">We sent a 4-digit code to</p>
-                <p className="font-medium">{phoneNumber}</p>
-                <button type="button" onClick={() => setStep("phone")} className="text-primary text-sm font-medium mt-1">Change number</button>
-              </div>
+            )}
 
-              <FormField
-                control={otpForm.control}
-                name="code"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col items-center">
-                    <FormControl>
-                      <InputOTP maxLength={4} {...field}>
-                        <InputOTPGroup>
-                          <InputOTPSlot index={0} className="w-14 h-16 text-2xl" />
-                          <InputOTPSlot index={1} className="w-14 h-16 text-2xl" />
-                          <InputOTPSlot index={2} className="w-14 h-16 text-2xl" />
-                          <InputOTPSlot index={3} className="w-14 h-16 text-2xl" />
-                        </InputOTPGroup>
-                      </InputOTP>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+              {isSignup ? "Create Account" : "Login"}
+            </Button>
+          </form>
+        </Form>
 
-              {devOtp && (
-                <div className="bg-orange-50 text-orange-800 text-sm px-4 py-2 rounded-md border border-orange-200">
-                  Dev OTP: {devOtp} (Auto-filled)
-                </div>
-              )}
-
-              <Button type="submit" className="w-full h-12 text-lg font-medium mt-4" disabled={verifyOtp.isPending}>
-                {verifyOtp.isPending ? "Verifying..." : "Verify & Continue"}
-              </Button>
-            </form>
-          </Form>
-        )}
+        <p className="text-center mt-4 text-sm text-gray-600">
+          {isSignup ? "Uko na account? " : "Huna account? "}
+          <button 
+            onClick={() => setIsSignup(!isSignup)} 
+            className="text-blue-600 font-semibold hover:underline"
+          >
+            {isSignup ? "Login" : "Sign Up"}
+          </button>
+        </p>
       </div>
     </div>
   );
